@@ -25,7 +25,6 @@ function App() {
           </List.Item>
         ))}
       </List>
-      <Button/>
     </div>
   );
 }
