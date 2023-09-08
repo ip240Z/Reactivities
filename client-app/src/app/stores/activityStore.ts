@@ -21,12 +21,11 @@ export default class ActivityStore {
 
     loadActivities = async () => {
         this.loadingInitial = true;
+        this.setLoadingInitial(true);
         try {
             const activities = await agent.Activities.list()
-            
             activities.forEach(act => {
-                act.date = act.date.split('T')[0];
-                this.activityRegistry.set(act.id, act)
+                this.setActivity(act)
             })
             this.setLoadingInitial(false);
         } catch (err) {
@@ -34,22 +33,39 @@ export default class ActivityStore {
             this.setLoadingInitial(false);
         }
     }
-    setLoadingInitial = (state: boolean) => {
-        this.loadingInitial = state;
+
+    loadActivity = async (id: string) => {
+        let activity = this.getActivity(id);
+        if (activity) {
+            this.selectedActivity = activity
+            return activity;
+        }
+        else {
+            this.setLoadingInitial(true);
+            try {
+                activity = await agent.Activities.details(id);
+                this.setActivity(activity);
+                runInAction(() => this.selectedActivity = activity)
+                this.setLoadingInitial(false);
+                return activity;
+            } catch (error) {
+                console.log(error);
+                this.setLoadingInitial(false);
+            }
+        }
     }
 
-    selectActivity = (id: string) => {
-        this.selectedActivity = this.activityRegistry.get(id);
+    private setActivity = (activity: Activity) => {
+        activity.date = activity.date.split('T')[0];
+        this.activityRegistry.set(activity.id, activity)
     }
-    cancelSelectedActivity = () => {
-        this.selectedActivity = undefined;
+
+    private getActivity = (id: string) => {
+        return this.activityRegistry.get(id);
     }
-    openForm = (id? : string) => {
-        id ? this.selectActivity(id) : this.cancelSelectedActivity();
-        this.editMode = true;
-    }
-    closeForm = () => {
-        this.editMode = false
+
+    setLoadingInitial = (state: boolean) => {
+        this.loadingInitial = state;
     }
 
     createActivity = async (activity: Activity) => {
@@ -95,7 +111,6 @@ export default class ActivityStore {
             await agent.Activities.delete(id);
             runInAction(() => {
                 this.activityRegistry.delete(id)
-                if (this.selectedActivity?.id === id) this.cancelSelectedActivity();
                 this.loading = false;
             })
         } catch (err) {
