@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Form, Header, Segment } from 'semantic-ui-react';
 import { useStore } from '../../../app/stores/store';
 import { observer } from 'mobx-react-lite';
@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Activity } from '../../../app/models/activity';
 import LoadingComponent from '../../../app/layout/LoadingComponent';
 import { v4 as uuid } from 'uuid';
-import { Formik, ErrorMessage } from 'formik';
+import { Formik } from 'formik';
 import MySelectInput from './MySelectInput';
 import MyTextArea from './MyTextArea';
 import MyTextInput from '../../../app/common/form/MyTextInput';
@@ -16,9 +16,19 @@ import * as Yup from 'yup'
 
 export default observer( function ActivityForm() {
     const {activityStore} = useStore();
-    const {createActivity, updateActivity, loading, loadingInitial, loadActivity} = activityStore;
+    const { createActivity, updateActivity, loading, loadingInitial, loadActivity} = activityStore;
     const {id} = useParams();
-    const navigate = useNavigate();
+    const navigate = useNavigate(); 
+    
+    const [activity, setActivity] = useState<Activity>({
+        id: '',
+        title: '',
+        category: '',
+        description: '',
+        date: null,
+        city: '',
+        venue: ''
+    })
 
     const validationSchema = Yup.object({
         title: Yup.string().required('The event title is required'),
@@ -29,32 +39,17 @@ export default observer( function ActivityForm() {
         city: Yup.string().required(),
     })
 
-    const [activity, setActivity] = useState<Activity>({
-        id: '',
-        title: '',
-        category: '',
-        description: '',
-        date: '',
-        city: '',
-        venue: ''
-    })
-
     useEffect(() => {
         if (id) loadActivity(id).then(activity => setActivity(activity!))
     }, [id, loadActivity])
 
-    function handleSubmit() {
+    function handleFormSubmit(activity: Activity) {
         if(!activity.id) {
             activity.id = uuid();
             createActivity(activity).then(() => navigate(`/activities/${activity.id}`));
         } else {
             updateActivity(activity).then(() => navigate(`/activities/${activity.id}`));
         }
-    }
-
-    const handleInputChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const {name, value} = event.target;
-        setActivity({...activity, [name]: value})
     }
 
     if (loadingInitial) return <LoadingComponent content='Loading Content...' />
@@ -66,8 +61,8 @@ export default observer( function ActivityForm() {
                 enableReinitialize
                 validationSchema={validationSchema}
                 initialValues={activity}
-                onSubmit={values => console.log(values)}>
-                {({ handleSubmit }) => (
+                onSubmit={values => handleFormSubmit(values)}>
+                {({ handleSubmit, isValid, isSubmitting, dirty }) => (
                     <Form className='ui form' onSubmit={handleSubmit} autoComplete='off'>
                         <MyTextInput name='title' placeholder='Title' />
                         <MyTextArea rows={3} name='description' placeholder='Description' />
@@ -81,6 +76,7 @@ export default observer( function ActivityForm() {
                         <MyTextInput name='venue' placeholder='Venue' />
                         <MyTextInput name='city' placeholder='city' />
                         <Button 
+                            disabled={isSubmitting || !dirty || !isValid}
                             loading={loading} 
                             floated='right' 
                             positive 

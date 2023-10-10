@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using API.Extensions;
 using API.Middleware;
+using Microsoft.AspNetCore.Identity;
+using Domain;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddApplicationServices(builder.Configuration);
+builder.Services.AddIdentityServices(builder.Configuration);
 
 var app = builder.Build();
 
@@ -29,8 +32,9 @@ var services = scope.ServiceProvider;
 
 try {
     var context = services.GetRequiredService<Persistence.DataContext>();
+    var userManager = services.GetRequiredService<UserManager<AppUser>>();
     await context.Database.MigrateAsync();
-    await Persistence.Seed.SeedData(context);
+    await Persistence.Seed.SeedData(context, userManager);
 } catch (Exception ex) {
     var logger = services.GetRequiredService<ILogger<Program>>();
     logger.LogError(ex, "An error occurred during migration");
