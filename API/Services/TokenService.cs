@@ -9,6 +9,12 @@ namespace API.Services
 {
     public class TokenService
     {
+        private readonly IConfiguration _config;
+        public TokenService(IConfiguration config)
+        {
+            _config = config;
+            
+        }
         public string CreateToken(AppUser user) {
             var claims = new List<Claim> {
                 new Claim(ClaimTypes.Name, user.UserName),
@@ -16,7 +22,7 @@ namespace API.Services
                 new Claim(ClaimTypes.Email, user.Email),
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("super secret key that I am going to make much longer because that may be giving me an issue, however I'm not sure. Okay, that has appeared to work, so that is good and also this is what the job of the super secret key is, so it's good that I've made it quite long with varied language and run-on sentence length."));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["TokenKey"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
 
             var tokenDescriptor = new SecurityTokenDescriptor{
