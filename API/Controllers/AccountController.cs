@@ -1,6 +1,3 @@
-
-
-using System.ComponentModel;
 using System.Security.Claims;
 using API.DTOs;
 using API.Services;
@@ -39,10 +36,12 @@ namespace API.Controllers
         [HttpPost("register")]
         public async Task<ActionResult<UserDto>> Register(RegisterDto registerDto){
             if (await _userManager.Users.AnyAsync(x => x.UserName == registerDto.Username)){
-                return BadRequest("Username is already registered");
+                ModelState.AddModelError("userName", "Username taken");
+                return ValidationProblem();
             }
             if (await _userManager.Users.AnyAsync(x => x.Email == registerDto.Email)){
-                return BadRequest("Email is already registered");
+                ModelState.AddModelError("email", "Email taken");
+                return ValidationProblem();
             }
             var user = new AppUser{
                 DisplayName = registerDto.DisplayName,
